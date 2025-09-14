@@ -15,16 +15,17 @@ public class JwtTokenUtil {
         this.expirationMillis = expirationMillis;
     }
 
-    public String generateToken(String subject) {
+    public String generateToken(Long userId, String username) {
         long nowMillis = System.currentTimeMillis();
         Date now = new Date(nowMillis);
         Date exp = new Date(nowMillis + expirationMillis);
         return Jwts.builder()
-                .setSubject(subject)
-                .setIssuedAt(now)
-                .setExpiration(exp)
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+            .setSubject(username) // standard "sub" claim
+            .claim("userId", userId) // custom claim
+            .setIssuedAt(now)
+            .setExpiration(exp)
+            .signWith(key, SignatureAlgorithm.HS256)
+            .compact();
     }
 
     public String getSubjectFromToken(String token) {
@@ -34,6 +35,24 @@ public class JwtTokenUtil {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    public String getUsernameFromToken(String token) {
+        return Jwts.parser()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject(); // "sub" -> username
+    }
+
+    public Long getUserIdFromToken(String token) {
+        return Jwts.parser()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("userId", Long.class); // custom claim
     }
 
     public boolean validateToken(String token) {
